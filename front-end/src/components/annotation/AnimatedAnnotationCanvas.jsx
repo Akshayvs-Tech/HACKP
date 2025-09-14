@@ -188,6 +188,28 @@ const AnimatedAnnotationCanvas = ({
     setCurrentRect(null);
   };
 
+  // Handle keyboard events for modal
+  useEffect(() => {
+    const handleModalKeyDown = (e) => {
+      if (!showLabelModal) return;
+      
+      if (e.key === 'Enter' && labelText.trim()) {
+        e.preventDefault();
+        if (selectedAnnotation) {
+          handleUpdateAnnotation();
+        } else {
+          handleSaveAnnotation();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleModalKeyDown);
+    return () => document.removeEventListener('keydown', handleModalKeyDown);
+  }, [showLabelModal, labelText, selectedAnnotation]);
+
   const renderAnnotation = (annotation) => {
     if (!containerDimensions.width || !imageDimensions.width) return null;
 
@@ -200,11 +222,12 @@ const AnimatedAnnotationCanvas = ({
       top: annotation.y * scaleY,
       width: annotation.width * scaleX,
       height: annotation.height * scaleY,
-      border: '2px solid rgb(59 130 246)',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      borderRadius: '4px',
+      border: '3px solid rgb(59 130 246)',
+      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+      borderRadius: '6px',
       cursor: isEditable ? 'pointer' : 'default',
       transition: 'all 0.2s ease',
+      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
     };
 
     return (
@@ -217,16 +240,22 @@ const AnimatedAnnotationCanvas = ({
             handleEditAnnotation(annotation);
           }
         }}
-        className="group hover:border-primary hover:bg-primary/20"
+        className="group hover:border-yellow-400 hover:bg-yellow-400/20 hover:shadow-lg"
       >
-        {/* Enhanced Label with better visibility */}
+        {/* Enhanced Label with better visibility and larger text */}
         <div 
-          className="absolute -top-9 left-0 pointer-events-none"
-          style={{ fontSize: '12px' }}
+          className="absolute -top-12 left-0 pointer-events-none z-10"
+          style={{ 
+            fontSize: '14px',
+            minWidth: 'max-content',
+            maxWidth: '200px'
+          }}
         >
-          <div className="bg-black/80 text-white px-3 py-1.5 rounded-md shadow-lg backdrop-blur-sm border border-white/20">
-            <div className="font-medium">{annotation.label}</div>
+          <div className="bg-black/90 text-white px-4 py-2 rounded-lg shadow-xl backdrop-blur-sm border-2 border-white/30">
+            <div className="font-semibold text-white drop-shadow-sm">{annotation.label}</div>
           </div>
+          {/* Arrow pointing to annotation */}
+          <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-black/90"></div>
         </div>
         
         {/* Delete button */}
@@ -331,21 +360,27 @@ const AnimatedAnnotationCanvas = ({
       {/* Label Modal */}
       <Modal isOpen={showLabelModal} onClose={closeModal}>
         <div className="p-6">
-          <h3 className="text-lg font-medium mb-4">
+          <h3 className="text-lg font-medium mb-4 text-black dark:text-white">
             {selectedAnnotation ? 'Edit Annotation' : 'Add Annotation Label'}
           </h3>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2 text-black dark:text-white">
                 Annotation Label
               </label>
               <Input
                 value={labelText}
                 onChange={(e) => setLabelText(e.target.value)}
                 placeholder="Enter label for this annotation..."
-                className="w-full"
+                className="w-full text-black dark:text-white bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
                 autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && labelText.trim()) {
+                    e.preventDefault();
+                    selectedAnnotation ? handleUpdateAnnotation() : handleSaveAnnotation();
+                  }
+                }}
               />
             </div>
             

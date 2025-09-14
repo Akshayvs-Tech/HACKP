@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import FloatingParticles from '../components/ui/FloatingParticles';
 import AnimatedCounter from '../components/ui/AnimatedCounter';
 import AnimatedProgressBar from '../components/ui/AnimatedProgressBar';
 import AutoSlidingGallery from '../components/ui/AutoSlidingGallery';
+import { toast } from '../components/ui/Toast';
 import { 
   Images, 
   PenTool, 
@@ -17,7 +18,8 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Upload
 } from 'lucide-react';
 
 const DashboardPage = () => {
@@ -25,10 +27,32 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const [isLoaded, setIsLoaded] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
+  const handleFileUpload = (event) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      toast.success('Upload Started', `Uploading ${files.length} image(s)...`);
+      
+      // Here you would typically upload to your backend
+      // For now, we'll just show a success message
+      setTimeout(() => {
+        toast.success('Upload Complete', `${files.length} image(s) uploaded successfully!`);
+      }, 2000);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const navigateToAnnotations = () => {
+    navigate('/annotations');
+  };
 
   const stats = [
     {
@@ -277,36 +301,67 @@ const DashboardPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2 animate-fade-in-up card-lift hover:scale-105 transition-all duration-300 p-4 rounded-lg" style={{ animationDelay: '2.2s' }}>
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center animate-glow-pulse">
-                  <Images className="h-4 w-4 text-white animate-icon-spin" />
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Upload Images - Clickable */}
+              <div 
+                className="space-y-3 animate-fade-in-up card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700 hover:shadow-lg" 
+                style={{ animationDelay: '2.2s' }}
+                onClick={triggerFileUpload}
+              >
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center animate-glow-pulse shadow-lg">
+                  <Upload className="h-6 w-6 text-white animate-icon-spin" />
                 </div>
-                <h4 className="font-medium">Upload Images</h4>
-                <p className="text-sm text-muted-foreground">
-                  Start by browsing the photo gallery to view available images for annotation.
+                <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Upload Images</h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Click here to upload new images to your workspace for annotation.
                 </p>
+                <Button 
+                  className="w-full mt-3 bg-blue-500 hover:bg-blue-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerFileUpload();
+                  }}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Choose Images
+                </Button>
                 <AnimatedProgressBar value={75} max={100} height={3} delay={2000} />
               </div>
-              <div className="space-y-2 animate-fade-in-up card-lift hover:scale-105 transition-all duration-300 p-4 rounded-lg" style={{ animationDelay: '2.4s' }}>
-                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center animate-glow-pulse">
-                  <PenTool className="h-4 w-4 text-white animate-icon-spin" />
+              
+              {/* Create Annotations - Clickable */}
+              <div 
+                className="space-y-3 animate-fade-in-up card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-700 hover:shadow-lg" 
+                style={{ animationDelay: '2.4s' }}
+                onClick={navigateToAnnotations}
+              >
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center animate-glow-pulse shadow-lg">
+                  <PenTool className="h-6 w-6 text-white animate-icon-spin" />
                 </div>
-                <h4 className="font-medium">Create Annotations</h4>
-                <p className="text-sm text-muted-foreground">
-                  Click and drag to select regions on images, then add descriptive labels.
+                <h4 className="text-lg font-semibold text-green-900 dark:text-green-100">Create Annotations</h4>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Start annotating images by clicking and dragging to select regions.
                 </p>
-                <AnimatedProgressBar value={60} max={100} height={3} delay={2200} />
-              </div>
-              <div className="space-y-2 animate-fade-in-up card-lift hover:scale-105 transition-all duration-300 p-4 rounded-lg" style={{ animationDelay: '2.6s' }}>
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center animate-glow-pulse">
-                  <CheckCircle className="h-4 w-4 text-white animate-icon-spin" />
-                </div>
-                <h4 className="font-medium">Save & Export</h4>
-                <p className="text-sm text-muted-foreground">
-                  Save your annotations and export them in JSON format for further processing.
-                </p>
-                <AnimatedProgressBar value={90} max={100} height={3} delay={2400} />
+                <Button 
+                  className="w-full mt-3 bg-green-500 hover:bg-green-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateToAnnotations();
+                  }}
+                >
+                  <PenTool className="h-4 w-4 mr-2" />
+                  Start Annotating
+                </Button>
+                <AnimatedProgressBar value={85} max={100} height={3} delay={2200} />
               </div>
             </div>
           </CardContent>

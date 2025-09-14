@@ -23,45 +23,63 @@ import {
 import { clsx } from 'clsx';
 import { toast } from '../ui/Toast';
 
-// Mock image data for annotation
+// Mock image data for annotation - using fixed seeds for consistent images
 const generateAnnotationImages = (count = 20) => {
   const categories = ['architecture', 'nature', 'urban', 'people', 'objects'];
-  return Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    title: `Photo ${i + 1}`,
-    url: `https://picsum.photos/800/600?random=${i + 1}`,
-    thumbnail: `https://picsum.photos/400/300?random=${i + 1}`,
-    description: `Photo for annotation - ${i + 1}`,
-    category: categories[Math.floor(Math.random() * categories.length)],
-    annotationCount: Math.floor(Math.random() * 5),
-    lastModified: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    annotations: []
-  }));
+  
+  // Fixed image IDs from Picsum for consistency
+  const fixedImageIds = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30
+  ];
+  
+  return Array.from({ length: count }, (_, i) => {
+    // Use specific image ID from Picsum for consistent images across refreshes
+    const picId = fixedImageIds[i % fixedImageIds.length];
+    const imageUrl = `https://picsum.photos/id/${picId}/800/600`;
+    
+    return {
+      id: i + 1,
+      title: `Photo ${i + 1}`,
+      url: imageUrl,
+      thumbnail: imageUrl, // Same URL as main image
+      description: `Photo for annotation - ${i + 1}`,
+      category: categories[Math.floor(Math.random() * categories.length)],
+      annotationCount: Math.floor(Math.random() * 5),
+      lastModified: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      annotations: [],
+      picId: picId // Store the picsum ID for reference
+    };
+  });
 };
 
-// Mock API functions
+// Mock API functions with persistent storage
 const mockAnnotationAPI = {
-  saveAnnotations: async (imageId, annotations) => {
+  saveAnnotations: async (imageId, annotations, picId) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
+    // Store annotations using both imageId and picId for uniqueness
+    const storageKey = `annotations_${imageId}_pic_${picId}`;
+    localStorage.setItem(storageKey, JSON.stringify(annotations));
     return { success: true, message: 'Annotations saved successfully' };
   },
   
-  loadAnnotations: async (imageId) => {
+  loadAnnotations: async (imageId, picId) => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    // Return some mock annotations for the first few images
-    if (imageId <= 3) {
-      return [
-        {
-          id: 1,
-          x: 100,
-          y: 150,
-          width: 200,
-          height: 100,
-          label: 'Object 1',
-          createdAt: new Date().toISOString()
-        }
-      ];
+    // Load annotations using both imageId and picId
+    const storageKey = `annotations_${imageId}_pic_${picId}`;
+    const stored = localStorage.getItem(storageKey);
+    
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error('Error parsing stored annotations:', error);
+        return [];
+      }
     }
+    
+    // No default annotations - start fresh for each image
     return [];
   }
 };
@@ -69,6 +87,20 @@ const mockAnnotationAPI = {
 const AnnotationImageCard = ({ image, onClick }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [actualAnnotationCount, setActualAnnotationCount] = useState(0);
+
+  // Load actual annotation count
+  useEffect(() => {
+    const loadAnnotationCount = async () => {
+      try {
+        const annotations = await mockAnnotationAPI.loadAnnotations(image.id, image.picId);
+        setActualAnnotationCount(annotations.length);
+      } catch (error) {
+        setActualAnnotationCount(0);
+      }
+    };
+    loadAnnotationCount();
+  }, [image.id, image.picId]);
 
   return (
     <Card 
@@ -104,9 +136,9 @@ const AnnotationImageCard = ({ image, onClick }) => {
         </div>
 
         {/* Annotation count badge */}
-        {image.annotationCount > 0 && (
+        {actualAnnotationCount > 0 && (
           <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-            {image.annotationCount} annotations
+            {actualAnnotationCount} annotations
           </div>
         )}
       </div>
@@ -130,19 +162,44 @@ const AnnotationModal = ({
   onPrevious, 
   onNext, 
   hasPrevious, 
-  hasNext 
+  hasNext,
+  onAnnotationsSaved 
 }) => {
   const [annotations, setAnnotations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isAnnotationMode, setIsAnnotationMode] = useState(true);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
 
   useEffect(() => {
     if (image && isOpen) {
       loadAnnotations();
     }
   }, [image, isOpen]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (hasUnsavedChanges && annotations.length > 0) {
+      // Clear existing timeout
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+      
+      // Set new auto-save timeout for 3 seconds
+      const timeout = setTimeout(() => {
+        saveAnnotations(true); // true indicates auto-save
+      }, 3000);
+      
+      setAutoSaveTimeout(timeout);
+    }
+
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  }, [hasUnsavedChanges, annotations]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -158,6 +215,13 @@ const AnnotationModal = ({
         case 'Escape':
           onClose();
           break;
+        case 's':
+        case 'S':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            saveAnnotations();
+          }
+          break;
       }
     };
 
@@ -170,7 +234,7 @@ const AnnotationModal = ({
     
     setLoading(true);
     try {
-      const loadedAnnotations = await mockAnnotationAPI.loadAnnotations(image.id);
+      const loadedAnnotations = await mockAnnotationAPI.loadAnnotations(image.id, image.picId);
       setAnnotations(loadedAnnotations);
       setHasUnsavedChanges(false);
     } catch (error) {
@@ -180,12 +244,18 @@ const AnnotationModal = ({
     }
   };
 
-  const saveAnnotations = async () => {
+  const saveAnnotations = async (isAutoSave = false) => {
     setSaving(true);
     try {
-      await mockAnnotationAPI.saveAnnotations(image.id, annotations);
+      await mockAnnotationAPI.saveAnnotations(image.id, annotations, image.picId);
       setHasUnsavedChanges(false);
-      toast.success('Success', 'Annotations saved successfully');
+      
+      if (!isAutoSave) {
+        toast.success('Success', 'Annotations saved successfully');
+      }
+      
+      // Notify parent to refresh gallery
+      onAnnotationsSaved?.();
     } catch (error) {
       toast.error('Error', 'Failed to save annotations');
     } finally {
@@ -337,6 +407,7 @@ const PhotoAnnotationGallery = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-render of cards
 
   const categories = ['all', ...new Set(images.map(img => img.category))];
 
@@ -355,7 +426,7 @@ const PhotoAnnotationGallery = () => {
     }
 
     setFilteredImages(filtered);
-  }, [selectedCategory, searchTerm, images]);
+  }, [selectedCategory, searchTerm, images, refreshKey]);
 
   const handleImageClick = (image) => {
     const index = filteredImages.findIndex(img => img.id === image.id);
@@ -384,6 +455,13 @@ const PhotoAnnotationGallery = () => {
     setIsModalOpen(false);
     setSelectedImage(null);
     setCurrentImageIndex(-1);
+    // Refresh gallery to update annotation counts
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleAnnotationsSaved = () => {
+    // Refresh gallery to update annotation counts
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -438,7 +516,7 @@ const PhotoAnnotationGallery = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredImages.map((image) => (
             <AnnotationImageCard
-              key={image.id}
+              key={`${image.id}-${refreshKey}`} // Force re-render when refreshKey changes
               image={image}
               onClick={handleImageClick}
             />
@@ -466,6 +544,7 @@ const PhotoAnnotationGallery = () => {
         onNext={handleNext}
         hasPrevious={currentImageIndex > 0}
         hasNext={currentImageIndex < filteredImages.length - 1}
+        onAnnotationsSaved={handleAnnotationsSaved}
       />
     </div>
   );

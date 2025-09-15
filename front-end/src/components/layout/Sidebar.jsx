@@ -74,25 +74,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>{item.name}</span>
               </NavLink>
             ))}
-            
-            {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              onClick={toggleTheme}
-              className="w-full justify-start px-3 py-2 mt-4 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
-            >
-              {theme === 'light' ? (
-                <>
-                  <Moon className="h-5 w-5 mr-3" />
-                  Dark Mode
-                </>
-              ) : (
-                <>
-                  <Sun className="h-5 w-5 mr-3" />
-                  Light Mode
-                </>
-              )}
-            </Button>
           </nav>
 
           {/* Footer - Empty or minimal */}

@@ -23,6 +23,7 @@ import {
 import { clsx } from 'clsx';
 import { toast } from '../ui/Toast';
 import { useImages } from '../../contexts/ImageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Mock API functions with persistent storage
 const mockAnnotationAPI = {
@@ -74,7 +75,7 @@ const AnnotationImageCard = ({ image, onClick }) => {
 
   return (
     <Card 
-      className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 card-lift"
+      className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 card-lift backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-2 hover:border-blue-400"
       onClick={() => onClick(image)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -94,14 +95,20 @@ const AnnotationImageCard = ({ image, onClick }) => {
           )}
         />
         
-        {/* Overlay with annotation info */}
+        {/* Enhanced overlay with annotation info and smooth animations */}
         <div className={clsx(
-          "absolute inset-0 bg-black/60 flex items-center justify-center transition-all duration-300",
-          isHovered ? "opacity-100" : "opacity-0"
+          "absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center transition-all duration-500 ease-out",
+          isHovered ? "opacity-100 backdrop-blur-sm" : "opacity-0"
         )}>
-          <div className="text-center text-white">
-            <PenTool className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm font-medium">Click to Annotate</p>
+          <div className={clsx(
+            "text-center text-white transition-all duration-300",
+            isHovered ? "transform translate-y-0 scale-100" : "transform translate-y-4 scale-95"
+          )}>
+            <div className="bg-white/20 rounded-full p-3 mb-3 backdrop-blur-md">
+              <PenTool className="h-6 w-6 mx-auto" />
+            </div>
+            <p className="text-sm font-medium drop-shadow-lg">Click to Annotate</p>
+            <p className="text-xs opacity-90 mt-1">Create and manage annotations</p>
           </div>
         </div>
 
@@ -135,6 +142,7 @@ const AnnotationModal = ({
   hasNext,
   onAnnotationsSaved 
 }) => {
+  const { theme } = useTheme();
   const [annotations, setAnnotations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -265,21 +273,28 @@ const AnnotationModal = ({
       isOpen={isOpen}
       onClose={onClose}
       size="full"
-      className="bg-white/10 backdrop-blur-xl border-0"
+      className={theme === 'light' ? 'bg-white/95 backdrop-blur-xl border-0' : 'bg-black/90 backdrop-blur-xl border-0'}
       showCloseButton={false}
     >
       <div className="relative flex items-center justify-center min-h-screen p-4">
-        {/* Glassmorphism overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/10 to-white/5 backdrop-blur-2xl"></div>
+        {/* Theme-aware glassmorphism overlay */}
+        <div className={`absolute inset-0 backdrop-blur-2xl ${
+          theme === 'light' 
+            ? 'bg-gradient-to-br from-white/40 via-white/20 to-white/10' 
+            : 'bg-gradient-to-br from-black/40 via-black/20 to-black/10'
+        }`}></div>
         
-        {/* Close button on top of image */}
+        {/* Clean minimalist close button - no background, just enlarges on hover */}
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="absolute top-8 right-8 z-50 bg-white/20 hover:bg-white/30 text-white rounded-full backdrop-blur-md border border-white/30 hover:border-white/50 transition-all duration-300"
+          className={`absolute top-6 right-6 z-50 bg-transparent hover:bg-transparent border-none transition-all duration-300 group p-2 ${
+            theme === 'light' ? 'text-black' : 'text-white'
+          }`}
+          title="Close"
         >
-          <X className="h-6 w-6" />
+          <X className="h-6 w-6 transition-transform duration-300 group-hover:scale-150 drop-shadow-lg" />
         </Button>
 
         {/* Annotation functionality with glassmorphism */}

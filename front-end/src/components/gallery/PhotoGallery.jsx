@@ -6,10 +6,11 @@ import EnhancedShimmer, { GalleryShimmerGrid } from '../ui/EnhancedShimmer';
 import MasonryGrid from '../ui/MasonryGrid';
 import AnimatedFilter from '../ui/AnimatedFilter';
 import FloatingParticles from '../ui/FloatingParticles';
-import { ChevronLeft, ChevronRight, Download, Maximize2, Search, Grid, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Maximize2, Search, Grid, List, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { toast } from '../ui/Toast';
 import { useImages } from '../../contexts/ImageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const LazyImage = ({ src, alt, className, onLoad, showOverlay = true, imageData = {}, ...props }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -64,47 +65,19 @@ const LazyImage = ({ src, alt, className, onLoad, showOverlay = true, imageData 
         </div>
       )}
       
-      {/* Enhanced Hover Overlay */}
-      {showOverlay && isLoaded && (
-        <div className={clsx(
-          "overlay transition-all duration-300 ease-out",
-          isHovered ? "transform translate-y-0 opacity-100" : "transform translate-y-full opacity-0"
-        )}>
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm">{imageData.title}</h3>
-            <p className="text-xs text-gray-300 line-clamp-2">{imageData.description}</p>
-            {imageData.tags && (
-              <div className="flex flex-wrap gap-1">
-                {imageData.tags.slice(0, 3).map((tag, index) => (
-                  <span 
-                    key={index}
-                    className="px-2 py-1 bg-white/20 rounded-full text-xs backdrop-blur-sm"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center justify-between text-xs">
-              <span>❤️ {imageData.likes}</span>
-              <span>👁️ {imageData.views}</span>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Zoom Icon */}
+      {/* Simple Zoom Icon - minimal overlay */}
       <div className={clsx(
         "absolute inset-0 flex items-center justify-center transition-all duration-300",
-        isHovered ? "bg-black/20 opacity-100" : "bg-transparent opacity-0"
+        isHovered ? "bg-black/10 opacity-100" : "bg-transparent opacity-0"
       )}>
-        <Maximize2 className="h-8 w-8 text-white transition-all duration-300 transform scale-0 group-hover:scale-100" />
+        <Maximize2 className="h-6 w-6 text-white transition-all duration-300 transform scale-0 group-hover:scale-100 drop-shadow-lg" />
       </div>
     </div>
   );
 };
 
 const ImageModal = ({ image, isOpen, onClose, onPrevious, onNext, hasPrevious, hasNext }) => {
+  const { theme } = useTheme();
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
@@ -133,7 +106,7 @@ const ImageModal = ({ image, isOpen, onClose, onPrevious, onNext, hasPrevious, h
       isOpen={isOpen}
       onClose={onClose}
       size="full"
-      className="bg-black/95"
+      className={theme === 'light' ? 'bg-white/95' : 'bg-black/95'}
       showCloseButton={false}
     >
       <div className="relative flex items-center justify-center min-h-[80vh] p-4">
@@ -169,77 +142,68 @@ const ImageModal = ({ image, isOpen, onClose, onPrevious, onNext, hasPrevious, h
           />
         </div>
 
-        {/* Image Info */}
-        <div className="absolute bottom-4 left-4 right-4 bg-black/70 text-white p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">{image.title}</h3>
-              <p className="text-sm text-gray-300">{image.description}</p>
-            </div>
-            <div className="flex space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.open(image.url, '_blank')}
-                className="text-white hover:bg-white/20"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => {
-                  try {
-                    // Fetch the image as blob to ensure proper download
-                    const response = await fetch(image.url);
-                    if (!response.ok) throw new Error('Failed to fetch image');
-                    
-                    const blob = await response.blob();
-                    
-                    // Create object URL and download
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
-                    document.body.appendChild(link);
-                    link.click();
-                    
-                    // Cleanup
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                    
-                    toast.success('Download Complete', `${image.title} downloaded successfully!`);
-                  } catch (error) {
-                    console.error('Download failed:', error);
-                    
-                    // Fallback to direct link
-                    try {
-                      const link = document.createElement('a');
-                      link.href = image.url;
-                      link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
-                      link.target = '_blank';
-                      link.click();
-                      toast.success('Download Complete', 'Image download initiated successfully!');
-                    } catch (fallbackError) {
-                      toast.error('Download Error', 'Unable to download image');
-                    }
-                  }
-                }}
-                className="text-white hover:bg-white/20"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+        {/* Download Button - positioned at bottom without black box */}
+        <div className="absolute bottom-6 right-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={async () => {
+              try {
+                // Fetch the image as blob to ensure proper download
+                const response = await fetch(image.url);
+                if (!response.ok) throw new Error('Failed to fetch image');
+                
+                const blob = await response.blob();
+                
+                // Create object URL and download
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                
+                // Cleanup
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                toast.success('Download Complete', `${image.title} downloaded successfully!`);
+              } catch (error) {
+                console.error('Download failed:', error);
+                
+                // Fallback to direct link
+                try {
+                  const link = document.createElement('a');
+                  link.href = image.url;
+                  link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
+                  link.target = '_blank';
+                  link.click();
+                  toast.success('Download Complete', 'Image download initiated successfully!');
+                } catch (fallbackError) {
+                  toast.error('Download Error', 'Unable to download image');
+                }
+              }
+            }}
+            className={`bg-transparent hover:bg-transparent border-none transition-all duration-300 group p-2 ${
+              theme === 'light' ? 'text-black' : 'text-white'
+            }`}
+            title="Download Image"
+          >
+            <Download className="h-5 w-5 transition-transform duration-300 group-hover:scale-150 drop-shadow-lg" />
+          </Button>
         </div>
 
-        {/* Close Button */}
+        {/* Clean minimalist close button - no background, just enlarges on hover */}
         <Button
           variant="ghost"
+          size="icon"
           onClick={onClose}
-          className="absolute top-4 right-4 text-white hover:bg-white/20"
+          className={`absolute top-6 right-6 z-50 bg-transparent hover:bg-transparent border-none transition-all duration-300 group p-2 ${
+            theme === 'light' ? 'text-black' : 'text-white'
+          }`}
+          title="Close"
         >
-          Close
+          <X className="h-6 w-6 transition-transform duration-300 group-hover:scale-150 drop-shadow-lg" />
         </Button>
       </div>
     </Modal>

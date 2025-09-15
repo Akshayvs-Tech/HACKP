@@ -28,25 +28,35 @@ const AnimatedAnnotationCanvas = ({
   // Handle image load
   const handleImageLoad = () => {
     const img = imageRef.current;
-    if (img) {
+    const container = containerRef.current;
+    if (img && container) {
       setImageLoaded(true);
       setImageDimensions({
         width: img.naturalWidth,
         height: img.naturalHeight
       });
       
-      // Calculate container dimensions maintaining aspect ratio
-      const container = containerRef.current;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        const aspectRatio = img.naturalHeight / img.naturalWidth;
-        const displayHeight = containerWidth * aspectRatio;
-        
-        setContainerDimensions({
-          width: containerWidth,
-          height: displayHeight
-        });
+      // Calculate displayed image dimensions based on object-contain behavior
+      const containerRect = container.getBoundingClientRect();
+      const imgAspectRatio = img.naturalWidth / img.naturalHeight;
+      const containerAspectRatio = containerRect.width / containerRect.height;
+      
+      let displayWidth, displayHeight;
+      
+      if (imgAspectRatio > containerAspectRatio) {
+        // Image is wider - fit to width
+        displayWidth = containerRect.width;
+        displayHeight = containerRect.width / imgAspectRatio;
+      } else {
+        // Image is taller - fit to height
+        displayHeight = containerRect.height;
+        displayWidth = containerRect.height * imgAspectRatio;
       }
+      
+      setContainerDimensions({
+        width: displayWidth,
+        height: displayHeight
+      });
     }
   };
 
@@ -54,16 +64,7 @@ const AnimatedAnnotationCanvas = ({
   useEffect(() => {
     const handleResize = () => {
       if (imageLoaded && imageRef.current && containerRef.current) {
-        const container = containerRef.current;
-        const img = imageRef.current;
-        const containerWidth = container.clientWidth;
-        const aspectRatio = img.naturalHeight / img.naturalWidth;
-        const displayHeight = containerWidth * aspectRatio;
-        
-        setContainerDimensions({
-          width: containerWidth,
-          height: displayHeight
-        });
+        handleImageLoad(); // Recalculate dimensions
       }
     };
 
@@ -73,15 +74,29 @@ const AnimatedAnnotationCanvas = ({
 
   const getRelativeCoordinates = (e) => {
     const container = containerRef.current;
-    if (!container || !imageLoaded) return { x: 0, y: 0 };
+    if (!container || !imageLoaded || !containerDimensions.width) return { x: 0, y: 0 };
     
-    const rect = container.getBoundingClientRect();
-    const relativeX = (e.clientX - rect.left) / rect.width;
-    const relativeY = (e.clientY - rect.top) / rect.height;
+    const containerRect = container.getBoundingClientRect();
+    
+    // Calculate image position within container (centered)
+    const imageOffsetX = (containerRect.width - containerDimensions.width) / 2;
+    const imageOffsetY = (containerRect.height - containerDimensions.height) / 2;
+    
+    // Get click position relative to container
+    const clickX = e.clientX - containerRect.left;
+    const clickY = e.clientY - containerRect.top;
+    
+    // Adjust for image offset and scale to natural image size
+    const relativeX = (clickX - imageOffsetX) / containerDimensions.width;
+    const relativeY = (clickY - imageOffsetY) / containerDimensions.height;
+    
+    // Clamp to image bounds
+    const clampedX = Math.max(0, Math.min(1, relativeX));
+    const clampedY = Math.max(0, Math.min(1, relativeY));
     
     return {
-      x: relativeX * imageDimensions.width,
-      y: relativeY * imageDimensions.height
+      x: clampedX * imageDimensions.width,
+      y: clampedY * imageDimensions.height
     };
   };
 
@@ -213,13 +228,22 @@ const AnimatedAnnotationCanvas = ({
   const renderAnnotation = (annotation) => {
     if (!containerDimensions.width || !imageDimensions.width) return null;
 
+    const container = containerRef.current;
+    if (!container) return null;
+    
+    const containerRect = container.getBoundingClientRect();
+    
+    // Calculate image position within container (centered)
+    const imageOffsetX = (containerRect.width - containerDimensions.width) / 2;
+    const imageOffsetY = (containerRect.height - containerDimensions.height) / 2;
+    
     const scaleX = containerDimensions.width / imageDimensions.width;
     const scaleY = containerDimensions.height / imageDimensions.height;
 
     const style = {
       position: 'absolute',
-      left: annotation.x * scaleX,
-      top: annotation.y * scaleY,
+      left: imageOffsetX + (annotation.x * scaleX),
+      top: imageOffsetY + (annotation.y * scaleY),
       width: annotation.width * scaleX,
       height: annotation.height * scaleY,
       border: '3px solid rgb(59 130 246)',
@@ -279,13 +303,22 @@ const AnimatedAnnotationCanvas = ({
   const renderCurrentRect = () => {
     if (!currentRect || !containerDimensions.width || !imageDimensions.width) return null;
 
+    const container = containerRef.current;
+    if (!container) return null;
+    
+    const containerRect = container.getBoundingClientRect();
+    
+    // Calculate image position within container (centered)
+    const imageOffsetX = (containerRect.width - containerDimensions.width) / 2;
+    const imageOffsetY = (containerRect.height - containerDimensions.height) / 2;
+
     const scaleX = containerDimensions.width / imageDimensions.width;
     const scaleY = containerDimensions.height / imageDimensions.height;
 
     const style = {
       position: 'absolute',
-      left: currentRect.x * scaleX,
-      top: currentRect.y * scaleY,
+      left: imageOffsetX + (currentRect.x * scaleX),
+      top: imageOffsetY + (currentRect.y * scaleY),
       width: currentRect.width * scaleX,
       height: currentRect.height * scaleY,
       border: '2px dashed rgb(34 197 94)',
@@ -299,13 +332,13 @@ const AnimatedAnnotationCanvas = ({
 
   return (
     <div className="space-y-4">
-      {/* Image Container */}
+      {/* Image Container - No borders */}
       <div 
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-lg border bg-muted"
+        className="relative flex items-center justify-center overflow-hidden rounded-lg bg-transparent"
         style={{ 
-          height: containerDimensions.height || 'auto',
           minHeight: '400px',
+          maxHeight: '80vh',
           cursor: isEditable ? 'crosshair' : 'default'
         }}
         onMouseDown={handleMouseDown}
@@ -324,7 +357,7 @@ const AnimatedAnnotationCanvas = ({
           ref={imageRef}
           src={imageUrl}
           alt="Annotation target"
-          className="w-full h-full object-contain"
+          className="max-w-full max-h-[75vh] object-contain shadow-2xl rounded-lg"
           onLoad={handleImageLoad}
           onError={(e) => {
             console.error('Failed to load image:', e);

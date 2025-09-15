@@ -191,13 +191,46 @@ const DashboardPage = () => {
       {/* Main Content */}
       <div className="relative z-10 space-y-4 animate-fade-in">
         {/* Welcome Section */}
-        <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent animate-typewriter">
-            Welcome back, {user?.username || 'User'}!
-          </h1>
-          <p className="text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            Here's what's happening with your photo annotation project today.
-          </p>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8 border border-border/50 shadow-lg animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <div className="relative z-10">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-foreground bg-clip-text text-transparent animate-typewriter mb-2">
+              Welcome back, {user?.username || 'User'}!
+            </h1>
+            <p className="text-muted-foreground text-lg animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              Here's what's happening with your PhotoGallery Pro project today.
+            </p>
+            <div className="flex items-center space-x-4 mt-6 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+              <Button 
+                variant="gradient"
+                onClick={triggerFileUpload}
+                className="group"
+              >
+                <Upload className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                Upload Images
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={navigateToAnnotations}
+                className="border-primary/30 hover:border-primary/50"
+              >
+                <PenTool className="h-4 w-4 mr-2" />
+                Start Annotating
+              </Button>
+            </div>
+          </div>
+          
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-1/3 w-24 h-24 bg-gradient-to-br from-secondary/20 to-secondary/5 rounded-full blur-2xl"></div>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
         </div>
 
         {/* Complex Analytics Dashboard */}
@@ -206,98 +239,117 @@ const DashboardPage = () => {
         </div>
 
         {/* Quick Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
           {stats.slice(0, 4).map((stat, index) => (
             <Card 
               key={index} 
-              className="animate-card-slide-in card-lift hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0" 
+              variant="modern"
+              className="animate-card-slide-in group hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden" 
               style={{ animationDelay: `${0.9 + index * 0.05}s` }}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`p-1.5 rounded-lg ${stat.bgColor}`}>
-                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-3 rounded-xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-200 shadow-md`}>
+                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
                   </div>
-                  <p className={`text-xs font-medium ${stat.color}`}>
+                  <div className={`text-sm font-semibold ${stat.color} bg-white/10 dark:bg-black/10 px-2 py-1 rounded-lg`}>
                     {stat.change}
-                  </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-lg font-bold">
+                <div className="space-y-2">
+                  <p className="text-2xl font-bold tracking-tight">
                     <AnimatedCounter 
                       value={stat.value} 
                       duration={1500 + index * 100}
                     />
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground font-medium">
                     {stat.title}
                   </p>
+                  <div className="w-full bg-accent rounded-full h-2 mt-3">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-1000 bg-gradient-to-r ${
+                        stat.color.includes('blue') ? 'from-blue-400 to-blue-600' :
+                        stat.color.includes('green') ? 'from-green-400 to-green-600' :
+                        stat.color.includes('purple') ? 'from-purple-400 to-purple-600' :
+                        'from-orange-400 to-orange-600'
+                      }`}
+                      style={{ 
+                        width: `${stat.progress}%`,
+                        transitionDelay: `${1000 + index * 200}ms`
+                      }}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
           {/* Quick Actions */}
-          <Card className="lg:col-span-1 card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5 text-blue-500" />
-                <span>Quick Actions</span>
+          <Card variant="modern" className="lg:col-span-1 overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-lg font-semibold">Quick Actions</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-muted-foreground">
                 Get started with common tasks
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               {quickActions.map((action, index) => (
                 <Button
                   key={index}
-                  variant="outline"
-                  className="w-full justify-start h-auto p-4 hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0"
+                  variant="modern"
+                  className="w-full justify-start h-auto p-4 hover:scale-[1.02] transition-all duration-300 group"
                   onClick={action.action}
                   style={{ animationDelay: `${1.4 + index * 0.1}s` }}
                 >
-                  <div className={`p-2 rounded-lg mr-3 ${action.color} text-white`}>
-                    <action.icon className="h-4 w-4" />
+                  <div className={`p-3 rounded-xl mr-4 ${action.color} text-white shadow-md group-hover:shadow-lg transition-shadow`}>
+                    <action.icon className="h-5 w-5" />
                   </div>
-                  <div className="text-left">
-                    <div className="font-medium">{action.title}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-foreground">{action.title}</div>
+                    <div className="text-sm text-muted-foreground">
                       {action.description}
                     </div>
                   </div>
-                  <ArrowRight className="h-4 w-4 ml-auto transition-transform duration-300 group-hover:translate-x-1" />
+                  <ArrowRight className="h-5 w-5 ml-auto transition-transform duration-300 group-hover:translate-x-1 text-muted-foreground" />
                 </Button>
               ))}
               
               {/* Additional Quick Action - Settings */}
               <Button
-                variant="outline"
-                className="w-full justify-start h-auto p-4 hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0"
+                variant="modern"
+                className="w-full justify-start h-auto p-4 hover:scale-[1.02] transition-all duration-300 group"
                 onClick={() => navigate('/settings')}
               >
-                <div className="p-2 rounded-lg mr-3 bg-gray-500 hover:bg-gray-600 text-white">
-                  <Settings className="h-4 w-4" />
+                <div className="p-3 rounded-xl mr-4 bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md group-hover:shadow-lg transition-shadow">
+                  <Settings className="h-5 w-5" />
                 </div>
-                <div className="text-left">
-                  <div className="font-medium">Settings</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="text-left flex-1">
+                  <div className="font-semibold text-foreground">Settings</div>
+                  <div className="text-sm text-muted-foreground">
                     Configure your workspace
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 ml-auto transition-transform duration-300 group-hover:translate-x-1" />
+                <ArrowRight className="h-5 w-5 ml-auto transition-transform duration-300 group-hover:translate-x-1 text-muted-foreground" />
               </Button>
             </CardContent>
           </Card>
 
           {/* Recent Activity */}
-          <Card className="lg:col-span-2 card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-green-500" />
-                <span>Recent Activity</span>
+          <Card variant="modern" className="lg:col-span-2 overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-r from-green-500 to-green-600 rounded-lg">
+                  <Activity className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-lg font-semibold">Recent Activity</span>
               </CardTitle>
               <CardDescription>
                 Latest updates from your annotation workspace
@@ -359,82 +411,6 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Usage Tips */}
-        <Card className="card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0 animate-fade-in-up" style={{ animationDelay: '2.0s' }}>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Upload className="h-5 w-5 text-green-500" />
-              <span>Getting Started</span>
-            </CardTitle>
-            <CardDescription>
-              Learn how to make the most of your annotation workspace
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Upload Images - Clickable */}
-              <div 
-                className="space-y-3 card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700 hover:shadow-lg" 
-                style={{ animationDelay: '2.2s' }}
-                onClick={triggerFileUpload}
-              >
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Upload className="h-6 w-6 text-white" />
-                </div>
-                <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Upload Images</h4>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Click here to upload new images to your workspace for annotation.
-                </p>
-                <Button 
-                  className="w-full mt-3 bg-blue-500 hover:bg-blue-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerFileUpload();
-                  }}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Choose Images
-                </Button>
-              </div>
-              
-              {/* Create Annotations - Clickable */}
-              <div 
-                className="space-y-3 card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-700 hover:shadow-lg" 
-                style={{ animationDelay: '2.4s' }}
-                onClick={navigateToAnnotations}
-              >
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <PenTool className="h-6 w-6 text-white" />
-                </div>
-                <h4 className="text-lg font-semibold text-green-900 dark:text-green-100">Create Annotations</h4>
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  Start annotating images by clicking and dragging to select regions.
-                </p>
-                <Button 
-                  className="w-full mt-3 bg-green-500 hover:bg-green-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigateToAnnotations();
-                  }}
-                >
-                  <PenTool className="h-4 w-4 mr-2" />
-                  Start Annotating
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

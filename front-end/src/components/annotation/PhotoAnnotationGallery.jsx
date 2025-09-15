@@ -74,13 +74,13 @@ const AnnotationImageCard = ({ image, onClick }) => {
   }, [image.id, image.picId]);
 
   return (
-    <Card 
-      className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 card-lift backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-2 hover:border-blue-400"
+    <div 
+      className="group cursor-pointer rounded-lg overflow-hidden bg-card border photo-card"
       onClick={() => onClick(image)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg">
+      <div className="aspect-[4/3] relative min-h-[200px]">
         {!isLoaded && (
           <EnhancedShimmer variant="gallery" className="absolute inset-0" />
         )}
@@ -88,47 +88,36 @@ const AnnotationImageCard = ({ image, onClick }) => {
           src={image.thumbnail}
           alt={image.title}
           onLoad={() => setIsLoaded(true)}
-          className={clsx(
-            "w-full h-full object-cover transition-all duration-300",
-            isHovered ? "scale-110" : "scale-100",
-            isLoaded ? "opacity-100" : "opacity-0"
-          )}
+          className="w-full h-full object-cover"
+          style={{
+            opacity: isLoaded ? 1 : 0,
+            transition: 'none',
+            animation: 'none',
+            transform: 'none'
+          }}
         />
-        
-        {/* Enhanced overlay with annotation info and smooth animations */}
-        <div className={clsx(
-          "absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center transition-all duration-500 ease-out",
-          isHovered ? "opacity-100 backdrop-blur-sm" : "opacity-0"
-        )}>
-          <div className={clsx(
-            "text-center text-white transition-all duration-300",
-            isHovered ? "transform translate-y-0 scale-100" : "transform translate-y-4 scale-95"
-          )}>
-            <div className="bg-white/20 rounded-full p-3 mb-3 backdrop-blur-md">
-              <PenTool className="h-6 w-6 mx-auto" />
-            </div>
-            <p className="text-sm font-medium drop-shadow-lg">Click to Annotate</p>
-            <p className="text-xs opacity-90 mt-1">Create and manage annotations</p>
+        {!isLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+            <span className="text-muted-foreground text-sm">Loading...</span>
           </div>
+        )}
+        
+        {/* Simple annotation overlay - minimal like gallery */}
+        <div className={clsx(
+          "absolute inset-0 flex items-center justify-center transition-all duration-300",
+          isHovered ? "bg-black/10 opacity-100" : "bg-transparent opacity-0"
+        )}>
+          <PenTool className="h-6 w-6 text-white transition-all duration-300 transform scale-0 group-hover:scale-100 drop-shadow-lg" />
         </div>
 
-        {/* Annotation count badge */}
+        {/* Annotation count badge - simplified */}
         {actualAnnotationCount > 0 && (
-          <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-            {actualAnnotationCount} annotations
+          <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
+            {actualAnnotationCount}
           </div>
         )}
       </div>
-      
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-sm mb-1">{image.title}</h3>
-        <p className="text-xs text-muted-foreground mb-2">{image.description}</p>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="capitalize">{image.category}</span>
-          <span>{new Date(image.lastModified).toLocaleDateString()}</span>
-        </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 };
 
@@ -142,7 +131,6 @@ const AnnotationModal = ({
   hasNext,
   onAnnotationsSaved 
 }) => {
-  const { theme } = useTheme();
   const [annotations, setAnnotations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -203,8 +191,15 @@ const AnnotationModal = ({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen, hasPrevious, hasNext, onPrevious, onNext, onClose]);
 
   const loadAnnotations = async () => {
@@ -266,59 +261,106 @@ const AnnotationModal = ({
     setHasUnsavedChanges(true);
   };
 
-  if (!image) return null;
+  if (!isOpen || !image) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="full"
-      className={theme === 'light' ? 'bg-white/95 backdrop-blur-xl border-0' : 'bg-black/90 backdrop-blur-xl border-0'}
-      showCloseButton={false}
-    >
-      <div className="relative flex items-center justify-center min-h-screen p-4">
-        {/* Theme-aware glassmorphism overlay */}
-        <div className={`absolute inset-0 backdrop-blur-2xl ${
-          theme === 'light' 
-            ? 'bg-gradient-to-br from-white/40 via-white/20 to-white/10' 
-            : 'bg-gradient-to-br from-black/40 via-black/20 to-black/10'
-        }`}></div>
-        
-        {/* Clean minimalist close button - no background, just enlarges on hover */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className={`absolute top-6 right-6 z-50 bg-transparent hover:bg-transparent border-none transition-all duration-300 group p-2 ${
-            theme === 'light' ? 'text-black' : 'text-white'
-          }`}
-          title="Close"
-        >
-          <X className="h-6 w-6 transition-transform duration-300 group-hover:scale-150 drop-shadow-lg" />
-        </Button>
-
-        {/* Annotation functionality with glassmorphism */}
+    <div className="fixed inset-0 z-50 bg-black/95">
+      {/* Backdrop - click to close */}
+      <div 
+        className="absolute inset-0"
+        onClick={onClose}
+      />
+      
+      {/* Main content container */}
+      <div className="relative w-full h-full flex items-center justify-center p-4">
         {loading ? (
-          <div className="flex items-center justify-center z-10">
+          <div className="flex items-center justify-center text-white">
             <LoadingSkeleton />
           </div>
         ) : (
-          <div className="relative z-10 w-full max-w-6xl">
-            {/* Annotation Canvas with glass effect */}
-            <div className="p-4 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl">
-              <AnimatedAnnotationCanvas
-                imageUrl={image.url}
-                annotations={annotations}
-                onAnnotationCreate={handleAnnotationCreate}
-                onAnnotationUpdate={handleAnnotationUpdate}
-                onAnnotationDelete={handleAnnotationDelete}
-                isEditable={isAnnotationMode}
-              />
-            </div>
+          <div 
+            className="relative max-w-5xl max-h-full w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Annotation Canvas */}
+            <AnimatedAnnotationCanvas
+              imageUrl={image.url}
+              annotations={annotations}
+              onAnnotationCreate={handleAnnotationCreate}
+              onAnnotationUpdate={handleAnnotationUpdate}
+              onAnnotationDelete={handleAnnotationDelete}
+              isEditable={isAnnotationMode}
+            />
+          </div>
+        )}
+        
+        {/* Control buttons */}
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+          title="Close (Esc)"
+        >
+          <X size={20} />
+        </button>
+        
+        {/* Save button */}
+        <button
+          onClick={() => saveAnnotations()}
+          disabled={saving || !hasUnsavedChanges}
+          className="absolute top-4 right-16 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={saving ? "Saving..." : hasUnsavedChanges ? "Save Annotations (Ctrl+S)" : "No changes to save"}
+        >
+          {saving ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Save size={16} />
+          )}
+        </button>
+        
+        {/* Annotation mode toggle */}
+        <button
+          onClick={() => setIsAnnotationMode(!isAnnotationMode)}
+          className={`absolute top-4 right-28 w-10 h-10 rounded-full backdrop-blur-sm border border-white/20 flex items-center justify-center transition-all duration-200 ${
+            isAnnotationMode 
+              ? 'bg-blue-500/70 hover:bg-blue-500/80 text-white' 
+              : 'bg-white/10 hover:bg-white/20 text-white'
+          }`}
+          title={isAnnotationMode ? "Exit Annotation Mode" : "Enter Annotation Mode"}
+        >
+          <PenTool size={16} />
+        </button>
+        
+        {/* Previous button */}
+        {hasPrevious && (
+          <button
+            onClick={onPrevious}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+            title="Previous Image (←)"
+          >
+            <ChevronLeft size={24} />
+          </button>
+        )}
+        
+        {/* Next button */}
+        {hasNext && (
+          <button
+            onClick={onNext}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+            title="Next Image (→)"
+          >
+            <ChevronRight size={24} />
+          </button>
+        )}
+        
+        {/* Status indicator */}
+        {hasUnsavedChanges && (
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full bg-yellow-500/80 text-black text-sm font-medium backdrop-blur-sm">
+            Unsaved changes • Auto-save in 3s
           </div>
         )}
       </div>
-    </Modal>
+    </div>
   );
 };
 
@@ -335,9 +377,11 @@ const PhotoAnnotationGallery = () => {
 
   // Update images when uploaded images change or context is initialized
   useEffect(() => {
+    console.log('PhotoAnnotationGallery: isInitialized:', isInitialized, 'uploadedImages count:', uploadedImages.length);
     if (isInitialized) {
       console.log('PhotoAnnotationGallery: Loading images, uploaded count:', uploadedImages.length);
       const images = getAllImages(true); // Include mock images
+      console.log('PhotoAnnotationGallery: Total images loaded:', images.length);
       setAllImages(images);
     }
   }, [uploadedImages, getAllImages, isInitialized]);
@@ -396,6 +440,19 @@ const PhotoAnnotationGallery = () => {
     // Refresh gallery to update annotation counts
     setRefreshKey(prev => prev + 1);
   };
+
+  // Show loading state while context is initializing
+  if (!isInitialized) {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center">
+        <FloatingParticles particleCount={30} />
+        <div className="relative z-10">
+          <LoadingSkeleton />
+          <p className="text-center mt-4 text-muted-foreground">Loading gallery...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen">

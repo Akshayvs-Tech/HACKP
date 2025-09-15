@@ -10,7 +10,8 @@ const Modal = ({
   children, 
   size = 'default',
   showCloseButton = true,
-  className 
+  className,
+  contentClassName = "p-6"
 }) => {
   useEffect(() => {
     const handleEscape = (e) => {
@@ -76,7 +77,7 @@ const Modal = ({
         )}
         
         {/* Content */}
-        <div className="p-6">
+        <div className={contentClassName}>
           {children}
         </div>
       </div>

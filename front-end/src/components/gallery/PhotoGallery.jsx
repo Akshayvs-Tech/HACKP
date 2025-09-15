@@ -77,7 +77,6 @@ const LazyImage = ({ src, alt, className, onLoad, showOverlay = true, imageData 
 };
 
 const ImageModal = ({ image, isOpen, onClose, onPrevious, onNext, hasPrevious, hasNext }) => {
-  const { theme } = useTheme();
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
@@ -95,118 +94,97 @@ const ImageModal = ({ image, isOpen, onClose, onPrevious, onNext, hasPrevious, h
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen, hasPrevious, hasNext, onPrevious, onNext, onClose]);
 
-  if (!image) return null;
+  if (!isOpen || !image) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="full"
-      className={theme === 'light' ? 'bg-white/95' : 'bg-black/95'}
-      showCloseButton={false}
-    >
-      <div className="relative flex items-center justify-center min-h-[80vh] p-4">
-        {/* Navigation Buttons */}
+    <div className="fixed inset-0 z-50 bg-black/95">
+      {/* Backdrop - click to close */}
+      <div 
+        className="absolute inset-0"
+        onClick={onClose}
+      />
+      
+      {/* Image container */}
+      <div className="relative w-full h-full flex items-center justify-center p-8">
+        <img
+          src={image.url}
+          alt={image.title}
+          className="max-w-full max-h-full object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+        
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+          title="Close (Esc)"
+        >
+          <X size={20} />
+        </button>
+        
+        {/* Download button */}
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch(image.url);
+              if (!response.ok) throw new Error('Failed to fetch image');
+              
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+              
+              toast.success('Download Complete', `${image.title} downloaded successfully!`);
+            } catch (error) {
+              console.error('Download failed:', error);
+              toast.error('Download Error', 'Unable to download image');
+            }
+          }}
+          className="absolute top-4 right-16 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+          title="Download Image"
+        >
+          <Download size={16} />
+        </button>
+        
+        {/* Previous button */}
         {hasPrevious && (
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={onPrevious}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+            title="Previous Image (←)"
           >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
+            <ChevronLeft size={24} />
+          </button>
         )}
         
+        {/* Next button */}
         {hasNext && (
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={onNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+            title="Next Image (→)"
           >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
+            <ChevronRight size={24} />
+          </button>
         )}
-
-        {/* Image */}
-        <div className="max-w-full max-h-full">
-          <img
-            src={image.url}
-            alt={image.title}
-            className="max-w-full max-h-[80vh] object-contain"
-          />
-        </div>
-
-        {/* Download Button - positioned at bottom without black box */}
-        <div className="absolute bottom-6 right-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={async () => {
-              try {
-                // Fetch the image as blob to ensure proper download
-                const response = await fetch(image.url);
-                if (!response.ok) throw new Error('Failed to fetch image');
-                
-                const blob = await response.blob();
-                
-                // Create object URL and download
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                
-                // Cleanup
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-                
-                toast.success('Download Complete', `${image.title} downloaded successfully!`);
-              } catch (error) {
-                console.error('Download failed:', error);
-                
-                // Fallback to direct link
-                try {
-                  const link = document.createElement('a');
-                  link.href = image.url;
-                  link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
-                  link.target = '_blank';
-                  link.click();
-                  toast.success('Download Complete', 'Image download initiated successfully!');
-                } catch (fallbackError) {
-                  toast.error('Download Error', 'Unable to download image');
-                }
-              }
-            }}
-            className={`bg-transparent hover:bg-transparent border-none transition-all duration-300 group p-2 ${
-              theme === 'light' ? 'text-black' : 'text-white'
-            }`}
-            title="Download Image"
-          >
-            <Download className="h-5 w-5 transition-transform duration-300 group-hover:scale-150 drop-shadow-lg" />
-          </Button>
-        </div>
-
-        {/* Clean minimalist close button - no background, just enlarges on hover */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className={`absolute top-6 right-6 z-50 bg-transparent hover:bg-transparent border-none transition-all duration-300 group p-2 ${
-            theme === 'light' ? 'text-black' : 'text-white'
-          }`}
-          title="Close"
-        >
-          <X className="h-6 w-6 transition-transform duration-300 group-hover:scale-150 drop-shadow-lg" />
-        </Button>
       </div>
-    </Modal>
+    </div>
   );
 };
 

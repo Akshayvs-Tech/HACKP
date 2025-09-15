@@ -8,22 +8,8 @@ import AnimatedFilter from '../ui/AnimatedFilter';
 import FloatingParticles from '../ui/FloatingParticles';
 import { ChevronLeft, ChevronRight, Download, Maximize2, Search, Grid, List } from 'lucide-react';
 import { clsx } from 'clsx';
-
-// Mock image data with categories
-const generateMockImages = (count = 40) => {
-  const categories = ['nature', 'architecture', 'people', 'technology', 'abstract'];
-  return Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    title: `Photo ${i + 1}`,
-    url: `https://picsum.photos/800/600?random=${i + 1}`,
-    thumbnail: `https://picsum.photos/400/300?random=${i + 1}`,
-    description: `A beautiful photo captured at location ${i + 1}`,
-    category: categories[Math.floor(Math.random() * categories.length)],
-    likes: Math.floor(Math.random() * 100),
-    views: Math.floor(Math.random() * 1000),
-    tags: ['photo', 'gallery', categories[Math.floor(Math.random() * categories.length)]],
-  }));
-};
+import { toast } from '../ui/Toast';
+import { useImages } from '../../contexts/ImageContext';
 
 const LazyImage = ({ src, alt, className, onLoad, showOverlay = true, imageData = {}, ...props }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -202,11 +188,42 @@ const ImageModal = ({ image, isOpen, onClose, onPrevious, onNext, hasPrevious, h
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = image.url;
-                  link.download = `${image.title}.jpg`;
-                  link.click();
+                onClick={async () => {
+                  try {
+                    // Fetch the image as blob to ensure proper download
+                    const response = await fetch(image.url);
+                    if (!response.ok) throw new Error('Failed to fetch image');
+                    
+                    const blob = await response.blob();
+                    
+                    // Create object URL and download
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // Cleanup
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    
+                    toast.success('Download Complete', `${image.title} downloaded successfully!`);
+                  } catch (error) {
+                    console.error('Download failed:', error);
+                    
+                    // Fallback to direct link
+                    try {
+                      const link = document.createElement('a');
+                      link.href = image.url;
+                      link.download = `${image.title.replace(/\s+/g, '_')}.jpg`;
+                      link.target = '_blank';
+                      link.click();
+                      toast.success('Download Complete', 'Image download initiated successfully!');
+                    } catch (fallbackError) {
+                      toast.error('Download Error', 'Unable to download image');
+                    }
+                  }
                 }}
                 className="text-white hover:bg-white/20"
               >
@@ -230,7 +247,8 @@ const ImageModal = ({ image, isOpen, onClose, onPrevious, onNext, hasPrevious, h
 };
 
 const PhotoGallery = () => {
-  const [allImages] = useState(generateMockImages(40));
+  const { getAllImages, uploadedImages, isInitialized } = useImages();
+  const [allImages, setAllImages] = useState([]);
   const [displayedImages, setDisplayedImages] = useState([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -242,8 +260,20 @@ const PhotoGallery = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const imagesPerPage = 12;
 
-  // Filter configuration
+  // Update allImages when uploaded images change or context is initialized
+  useEffect(() => {
+    if (isInitialized) {
+      console.log('PhotoGallery: Loading images, uploaded count:', uploadedImages.length);
+      const images = getAllImages(true); // Include mock images
+      setAllImages(images);
+      setIsLoading(false); // Set loading to false immediately when we have images
+    }
+  }, [uploadedImages, getAllImages, isInitialized]);
+
+  // Filter configuration - include uploaded category
   const filters = [
+    { key: 'all', label: 'All', count: allImages.length },
+    { key: 'uploaded', label: 'Uploaded', count: allImages.filter(img => img.category === 'uploaded').length },
     { key: 'nature', label: 'Nature', count: allImages.filter(img => img.category === 'nature').length },
     { key: 'architecture', label: 'Architecture', count: allImages.filter(img => img.category === 'architecture').length },
     { key: 'people', label: 'People', count: allImages.filter(img => img.category === 'people').length },
@@ -270,17 +300,18 @@ const PhotoGallery = () => {
     return filtered;
   }, [allImages, activeFilter, searchTerm]);
 
-  // Initial load simulation
+  // Initial load - load images as soon as allImages is populated
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      const filtered = getFilteredImages();
-      setDisplayedImages(filtered.slice(0, imagesPerPage));
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+    if (allImages.length > 0) {
+      try {
+        const filtered = getFilteredImages();
+        setDisplayedImages(filtered.slice(0, imagesPerPage));
+        console.log('PhotoGallery: Displayed', filtered.slice(0, imagesPerPage).length, 'images');
+      } catch (error) {
+        console.error('PhotoGallery: Error loading images:', error);
+      }
+    }
+  }, [allImages, getFilteredImages, imagesPerPage]);
 
   // Handle filter changes with animation
   useEffect(() => {

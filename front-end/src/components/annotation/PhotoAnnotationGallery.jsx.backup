@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { Card, CardC      </div>
+    </div>
+  );
+};
+
+const PhotoAnnotationGallery = () => {Header, CardTitle } from '../ui/Card';
 import { LoadingSkeleton } from '../ui/Loading';
 import EnhancedShimmer from '../ui/EnhancedShimmer';
 import AnimatedFilter from '../ui/AnimatedFilter';
@@ -22,7 +27,37 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { toast } from '../ui/Toast';
-import { useImages } from '../../contexts/ImageContext';
+
+// Mock image data for annotation - using fixed seeds for consistent images
+const generateAnnotationImages = (count = 20) => {
+  const categories = ['architecture', 'nature', 'urban', 'people', 'objects'];
+  
+  // Fixed image IDs from Picsum for consistency
+  const fixedImageIds = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30
+  ];
+  
+  return Array.from({ length: count }, (_, i) => {
+    // Use specific image ID from Picsum for consistent images across refreshes
+    const picId = fixedImageIds[i % fixedImageIds.length];
+    const imageUrl = `https://picsum.photos/id/${picId}/800/600`;
+    
+    return {
+      id: i + 1,
+      title: `Photo ${i + 1}`,
+      url: imageUrl,
+      thumbnail: imageUrl, // Same URL as main image
+      description: `Photo for annotation - ${i + 1}`,
+      category: categories[Math.floor(Math.random() * categories.length)],
+      annotationCount: Math.floor(Math.random() * 5),
+      lastModified: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      annotations: [],
+      picId: picId // Store the picsum ID for reference
+    };
+  });
+};
 
 // Mock API functions with persistent storage
 const mockAnnotationAPI = {
@@ -73,22 +108,22 @@ const AnnotationImageCard = ({ image, onClick }) => {
   }, [image.id, image.picId]);
 
   return (
-    <Card 
-      className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 card-lift"
+    <div 
+      className="card-modern hover-glow group cursor-pointer animate-fade-in-scale"
       onClick={() => onClick(image)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
         {!isLoaded && (
-          <EnhancedShimmer variant="gallery" className="absolute inset-0" />
+          <div className="loading-shimmer absolute inset-0 rounded-t-xl" />
         )}
         <img
           src={image.thumbnail}
           alt={image.title}
           onLoad={() => setIsLoaded(true)}
           className={clsx(
-            "w-full h-full object-cover transition-all duration-300",
+            "w-full h-full object-cover transition-all duration-500",
             isHovered ? "scale-110" : "scale-100",
             isLoaded ? "opacity-100" : "opacity-0"
           )}
@@ -96,28 +131,41 @@ const AnnotationImageCard = ({ image, onClick }) => {
         
         {/* Overlay with annotation info */}
         <div className={clsx(
-          "absolute inset-0 bg-black/60 flex items-center justify-center transition-all duration-300",
+          "absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center transition-all duration-300",
           isHovered ? "opacity-100" : "opacity-0"
         )}>
-          <div className="text-center text-white">
-            <PenTool className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm font-medium">Click to Annotate</p>
+          <div className="text-center text-white animate-bounce">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center mx-auto mb-3">
+              <PenTool className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <p className="text-sm font-semibold mb-1">Click to Annotate</p>
+            <p className="text-xs opacity-80">Add labels and regions</p>
           </div>
         </div>
 
         {/* Annotation count badge */}
         {actualAnnotationCount > 0 && (
-          <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+          <div className="absolute top-3 right-3 bg-gradient-to-r from-primary to-primary-dark text-primary-foreground px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
             {actualAnnotationCount} annotations
           </div>
         )}
       </div>
       
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-sm mb-1">{image.title}</h3>
-        <p className="text-xs text-muted-foreground mb-2">{image.description}</p>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="capitalize">{image.category}</span>
+      <div className="card-content p-4 relative z-10">
+        <h3 className="font-semibold text-foreground mb-2">{image.title}</h3>
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{image.description}</p>
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground capitalize">
+            {image.category}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {new Date(image.lastModified).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
           <span>{new Date(image.lastModified).toLocaleDateString()}</span>
         </div>
       </CardContent>
@@ -265,41 +313,103 @@ const AnnotationModal = ({
       isOpen={isOpen}
       onClose={onClose}
       size="full"
-      className="bg-white/10 backdrop-blur-xl border-0"
+      className="bg-background"
       showCloseButton={false}
     >
-      <div className="relative flex items-center justify-center min-h-screen p-4">
-        {/* Glassmorphism overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/10 to-white/5 backdrop-blur-2xl"></div>
-        
-        {/* Close button on top of image */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="absolute top-8 right-8 z-50 bg-white/20 hover:bg-white/30 text-white rounded-full backdrop-blur-md border border-white/30 hover:border-white/50 transition-all duration-300"
-        >
-          <X className="h-6 w-6" />
-        </Button>
-
-        {/* Annotation functionality with glassmorphism */}
-        {loading ? (
-          <div className="flex items-center justify-center z-10">
-            <LoadingSkeleton />
-          </div>
-        ) : (
-          <div className="relative z-10 w-full max-w-6xl">
-            {/* Annotation Canvas with glass effect */}
-            <div className="p-4 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl">
-              <AnimatedAnnotationCanvas
-                imageUrl={image.url}
-                annotations={annotations}
-                onAnnotationCreate={handleAnnotationCreate}
-                onAnnotationUpdate={handleAnnotationUpdate}
-                onAnnotationDelete={handleAnnotationDelete}
-                isEditable={isAnnotationMode}
-              />
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur">
+          <div className="flex items-center space-x-4">
+            <h2 className="text-lg font-semibold">{image.title}</h2>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Target className="h-4 w-4" />
+              <span>{annotations.length} annotations</span>
             </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {/* Navigation */}
+            {hasPrevious && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPrevious}
+                className="flex items-center space-x-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span>Previous</span>
+              </Button>
+            )}
+            
+            {hasNext && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onNext}
+                className="flex items-center space-x-1"
+              >
+                <span>Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Save button */}
+            <Button
+              onClick={saveAnnotations}
+              disabled={!hasUnsavedChanges || saving}
+              size="sm"
+              className="flex items-center space-x-1"
+            >
+              <Save className="h-4 w-4" />
+              <span>{saving ? 'Saving...' : 'Save'}</span>
+            </Button>
+
+            {/* Toggle annotation mode */}
+            <Button
+              variant={isAnnotationMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsAnnotationMode(!isAnnotationMode)}
+              className="flex items-center space-x-1"
+            >
+              <PenTool className="h-4 w-4" />
+              <span>{isAnnotationMode ? 'Annotating' : 'Viewing'}</span>
+            </Button>
+
+            {/* Close button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Annotation Canvas */}
+        <div className="flex-1 p-4">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <LoadingSkeleton />
+            </div>
+          ) : (
+            <AnimatedAnnotationCanvas
+              imageUrl={image.url}
+              annotations={annotations}
+              onAnnotationCreate={handleAnnotationCreate}
+              onAnnotationUpdate={handleAnnotationUpdate}
+              onAnnotationDelete={handleAnnotationDelete}
+              isEditable={isAnnotationMode}
+            />
+          )}
+        </div>
+
+        {/* Unsaved changes indicator */}
+        {hasUnsavedChanges && (
+          <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 border-t">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+              You have unsaved changes. Don't forget to save your annotations!
+            </p>
           </div>
         )}
       </div>
@@ -308,9 +418,8 @@ const AnnotationModal = ({
 };
 
 const PhotoAnnotationGallery = () => {
-  const { getAllImages, uploadedImages, isInitialized } = useImages();
-  const [allImages, setAllImages] = useState([]);
-  const [filteredImages, setFilteredImages] = useState([]);
+  const [images] = useState(generateAnnotationImages(20));
+  const [filteredImages, setFilteredImages] = useState(images);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
@@ -318,19 +427,10 @@ const PhotoAnnotationGallery = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render of cards
 
-  // Update images when uploaded images change or context is initialized
-  useEffect(() => {
-    if (isInitialized) {
-      console.log('PhotoAnnotationGallery: Loading images, uploaded count:', uploadedImages.length);
-      const images = getAllImages(true); // Include mock images
-      setAllImages(images);
-    }
-  }, [uploadedImages, getAllImages, isInitialized]);
-
-  const categories = ['all', 'uploaded', ...new Set(allImages.filter(img => img.category !== 'uploaded').map(img => img.category))];
+  const categories = ['all', ...new Set(images.map(img => img.category))];
 
   useEffect(() => {
-    let filtered = allImages;
+    let filtered = images;
 
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(img => img.category === selectedCategory);
@@ -344,7 +444,7 @@ const PhotoAnnotationGallery = () => {
     }
 
     setFilteredImages(filtered);
-  }, [selectedCategory, searchTerm, allImages, refreshKey]);
+  }, [selectedCategory, searchTerm, images, refreshKey]);
 
   const handleImageClick = (image) => {
     const index = filteredImages.findIndex(img => img.id === image.id);

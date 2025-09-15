@@ -4,7 +4,6 @@ import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useImages } from '../contexts/ImageContext';
 import FloatingParticles from '../components/ui/FloatingParticles';
 import AnimatedCounter from '../components/ui/AnimatedCounter';
 import AnimatedProgressBar from '../components/ui/AnimatedProgressBar';
@@ -27,7 +26,6 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { addUploadedImage, isLoading: imageLoading, uploadedImages, isInitialized } = useImages();
   const [isLoaded, setIsLoaded] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -35,41 +33,16 @@ const DashboardPage = () => {
     setIsLoaded(true);
   }, []);
 
-  // Log uploaded images for debugging
-  useEffect(() => {
-    if (isInitialized) {
-      console.log('Dashboard: Uploaded images count:', uploadedImages.length);
-    }
-  }, [uploadedImages, isInitialized]);
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
-
-  const handleFileUpload = async (event) => {
+  const handleFileUpload = (event) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        try {
-          await addUploadedImage(file);
-          return file.name;
-        } catch (error) {
-          console.error('Upload failed for', file.name, error);
-          throw error;
-        }
-      });
-
-      try {
-        const uploadedFileNames = await Promise.all(uploadPromises);
-        toast.success('Upload Complete', `${uploadedFileNames.length} image(s) uploaded successfully!`);
-      } catch (error) {
-        toast.error('Upload Failed', 'Some images failed to upload. Please try again.');
-      }
-    }
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      toast.success('Upload Started', `Uploading ${files.length} image(s)...`);
+      
+      // Here you would typically upload to your backend
+      // For now, we'll just show a success message
+      setTimeout(() => {
+        toast.success('Upload Complete', `${files.length} image(s) uploaded successfully!`);
+      }, 2000);
     }
   };
 
@@ -84,8 +57,8 @@ const DashboardPage = () => {
   const stats = [
     {
       title: 'Total Images',
-      value: (248 + uploadedImages.length).toString(),
-      change: uploadedImages.length > 0 ? `+${uploadedImages.length}` : '+12%',
+      value: '248',
+      change: '+12%',
       icon: Images,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-100 dark:bg-blue-900/20',

@@ -264,7 +264,7 @@ const AnimatedAnnotationCanvas = ({
             handleEditAnnotation(annotation);
           }
         }}
-        className="group hover:border-yellow-400 hover:bg-yellow-400/20 hover:shadow-lg"
+        className="group hover:border-blue-400 hover:bg-blue-400/15 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
       >
         {/* Enhanced Label with better visibility and larger text */}
         <div 
@@ -281,21 +281,6 @@ const AnimatedAnnotationCanvas = ({
           {/* Arrow pointing to annotation */}
           <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-black/90"></div>
         </div>
-        
-        {/* Delete button */}
-        {isEditable && (
-          <Button
-            size="sm"
-            variant="destructive"
-            className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteAnnotation(annotation);
-            }}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        )}
       </div>
     );
   };
@@ -383,13 +368,6 @@ const AnimatedAnnotationCanvas = ({
         )}
       </div>
 
-      {/* Instructions */}
-      {imageLoaded && isEditable && (
-        <div className="text-sm text-muted-foreground text-center p-3 bg-muted/50 rounded-lg">
-          Click and drag on the image to create rectangular annotations. Click on existing annotations to edit them.
-        </div>
-      )}
-
       {/* Label Modal */}
       <Modal isOpen={showLabelModal} onClose={closeModal}>
         <div className="p-6">
@@ -417,13 +395,29 @@ const AnimatedAnnotationCanvas = ({
               />
             </div>
             
-            <div className="flex space-x-2 justify-end">
-              <Button variant="outline" onClick={closeModal}>
-                Cancel
-              </Button>
+            <div className="flex space-x-2 justify-between">
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={closeModal}>
+                  Cancel
+                </Button>
+                {selectedAnnotation && (
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      handleDeleteAnnotation(selectedAnnotation);
+                      closeModal();
+                    }}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
               <Button 
                 onClick={selectedAnnotation ? handleUpdateAnnotation : handleSaveAnnotation}
                 disabled={!labelText.trim()}
+                className="bg-blue-500 hover:bg-blue-600"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {selectedAnnotation ? 'Update' : 'Save'}

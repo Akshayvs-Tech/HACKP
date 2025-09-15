@@ -9,6 +9,7 @@ import FloatingParticles from '../components/ui/FloatingParticles';
 import AnimatedCounter from '../components/ui/AnimatedCounter';
 import AnimatedProgressBar from '../components/ui/AnimatedProgressBar';
 import AutoSlidingGallery from '../components/ui/AutoSlidingGallery';
+import AnalyticsDashboard from '../components/analytics/AnalyticsDashboard';
 import { toast } from '../components/ui/Toast';
 import { 
   Images, 
@@ -20,7 +21,9 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
-  Upload
+  Upload,
+  BarChart3,
+  Settings
 } from 'lucide-react';
 
 const DashboardPage = () => {
@@ -81,6 +84,14 @@ const DashboardPage = () => {
     navigate('/annotations');
   };
 
+  const handleActivityClick = (activity) => {
+    if (activity.type === 'annotation') {
+      navigate('/annotations');
+    } else if (activity.type === 'image') {
+      navigate('/gallery');
+    }
+  };
+
   const stats = [
     {
       title: 'Total Images',
@@ -126,28 +137,32 @@ const DashboardPage = () => {
       action: 'New annotation created',
       target: 'Building Detection - Image #127',
       time: '2 minutes ago',
-      icon: PenTool
+      icon: PenTool,
+      type: 'annotation'
     },
     {
       id: 2,
       action: 'Image uploaded',
       target: 'Landscape Collection',
       time: '15 minutes ago',
-      icon: Images
+      icon: Images,
+      type: 'image'
     },
     {
       id: 3,
       action: 'Annotation verified',
       target: 'Car Detection - Image #98',
       time: '1 hour ago',
-      icon: CheckCircle
+      icon: CheckCircle,
+      type: 'annotation'
     },
     {
       id: 4,
       action: 'Batch processing completed',
       target: '45 images processed',
       time: '2 hours ago',
-      icon: Activity
+      icon: Activity,
+      type: 'image'
     }
   ];
 
@@ -185,70 +200,50 @@ const DashboardPage = () => {
           </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-          {stats.map((stat, index) => (
+        {/* Complex Analytics Dashboard */}
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <AnalyticsDashboard uploadedImages={uploadedImages} />
+        </div>
+
+        {/* Quick Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+          {stats.slice(0, 4).map((stat, index) => (
             <Card 
               key={index} 
-              className="animate-card-slide-in card-lift animate-glow-pulse hover:animate-card-hover transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0" 
-              style={{ animationDelay: `${0.6 + index * 0.1}s` }}
+              className="animate-card-slide-in card-lift hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0" 
+              style={{ animationDelay: `${0.9 + index * 0.05}s` }}
             >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between space-y-0 pb-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </p>
-                  <div className={`p-2 rounded-lg ${stat.bgColor} animate-icon-spin`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`p-1.5 rounded-lg ${stat.bgColor}`}>
                     <stat.icon className={`h-4 w-4 ${stat.color}`} />
                   </div>
+                  <p className={`text-xs font-medium ${stat.color}`}>
+                    {stat.change}
+                  </p>
                 </div>
-                <div className="space-y-3">
-                  <p className="text-2xl font-bold">
+                <div className="space-y-1">
+                  <p className="text-lg font-bold">
                     <AnimatedCounter 
                       value={stat.value} 
-                      duration={2000 + index * 200}
+                      duration={1500 + index * 100}
                     />
                   </p>
-                  <p className={`text-xs ${stat.color}`}>
-                    {stat.change} from last month
+                  <p className="text-xs text-muted-foreground">
+                    {stat.title}
                   </p>
-                  {/* Progress Bar */}
-                  <AnimatedProgressBar 
-                    value={stat.progress} 
-                    max={100} 
-                    height={4}
-                    delay={1000 + index * 200}
-                  />
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Featured Gallery Section */}
-        <div className="animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
-          <Card className="card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Camera className="h-5 w-5 text-blue-500" />
-                <span>Featured Photo Gallery</span>
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Explore our curated collection with auto-sliding showcase
-              </p>
-            </CardHeader>
-            <CardContent>
-              <AutoSlidingGallery />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '1.4s' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
           {/* Quick Actions */}
-          <Card className="lg:col-span-1 card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0 animate-glow-pulse">
+          <Card className="lg:col-span-1 card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
+                <BarChart3 className="h-5 w-5 text-blue-500" />
                 <span>Quick Actions</span>
               </CardTitle>
               <CardDescription>
@@ -260,11 +255,11 @@ const DashboardPage = () => {
                 <Button
                   key={index}
                   variant="outline"
-                  className="w-full justify-start h-auto p-4 animate-liquid-button animate-ripple hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0"
+                  className="w-full justify-start h-auto p-4 hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0"
                   onClick={action.action}
-                  style={{ animationDelay: `${1.6 + index * 0.1}s` }}
+                  style={{ animationDelay: `${1.4 + index * 0.1}s` }}
                 >
-                  <div className={`p-2 rounded-lg mr-3 ${action.color} text-white animate-icon-spin`}>
+                  <div className={`p-2 rounded-lg mr-3 ${action.color} text-white`}>
                     <action.icon className="h-4 w-4" />
                   </div>
                   <div className="text-left">
@@ -275,15 +270,33 @@ const DashboardPage = () => {
                   </div>
                   <ArrowRight className="h-4 w-4 ml-auto transition-transform duration-300 group-hover:translate-x-1" />
                 </Button>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+              
+              {/* Additional Quick Action - Settings */}
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto p-4 hover:scale-105 transition-all duration-300 backdrop-blur-sm bg-white/10 dark:bg-black/10 border-0"
+                onClick={() => navigate('/settings')}
+              >
+                <div className="p-2 rounded-lg mr-3 bg-gray-500 hover:bg-gray-600 text-white">
+                  <Settings className="h-4 w-4" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium">Settings</div>
+                  <div className="text-xs text-muted-foreground">
+                    Configure your workspace
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 ml-auto transition-transform duration-300 group-hover:translate-x-1" />
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Recent Activity */}
-          <Card className="lg:col-span-2 card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0 animate-glow-pulse">
+          <Card className="lg:col-span-2 card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 animate-icon-spin" />
+                <Activity className="h-5 w-5 text-green-500" />
                 <span>Recent Activity</span>
               </CardTitle>
               <CardDescription>
@@ -295,19 +308,21 @@ const DashboardPage = () => {
                 {recentActivities.map((activity, index) => (
                   <div 
                     key={activity.id} 
-                    className="flex items-start space-x-3 animate-fade-in-up hover:bg-white/5 dark:hover:bg-black/5 p-3 rounded-lg transition-all duration-300 card-lift"
-                    style={{ animationDelay: `${1.8 + index * 0.1}s` }}
+                    className="flex items-start space-x-3 hover:bg-white/10 dark:hover:bg-black/10 p-3 rounded-lg transition-all duration-300 cursor-pointer group border border-transparent hover:border-white/20 dark:hover:border-gray-700"
+                    style={{ animationDelay: `${1.6 + index * 0.1}s` }}
+                    onClick={() => handleActivityClick(activity)}
                   >
-                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg animate-glow-pulse">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg group-hover:scale-110 transition-transform duration-200">
                       <activity.icon className="h-4 w-4 text-white" />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{activity.action}</p>
+                      <p className="text-sm font-medium group-hover:text-blue-400 transition-colors">{activity.action}</p>
                       <p className="text-sm text-muted-foreground">{activity.target}</p>
                     </div>
                     <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3 animate-pulse" />
+                      <Clock className="h-3 w-3" />
                       <span>{activity.time}</span>
+                      <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity ml-2" />
                     </div>
                   </div>
                 ))}
@@ -316,11 +331,40 @@ const DashboardPage = () => {
           </Card>
         </div>
 
+        {/* Featured Gallery Section - Compact */}
+        <div className="animate-fade-in-up" style={{ animationDelay: '1.8s' }}>
+          <Card className="card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Camera className="h-5 w-5 text-blue-500" />
+                  <CardTitle>Featured Gallery</CardTitle>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/gallery')}
+                  className="bg-white/10 dark:bg-black/10 border-0 hover:bg-white/20 dark:hover:bg-black/20"
+                >
+                  View All
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Explore our curated collection
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AutoSlidingGallery />
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Usage Tips */}
-        <Card className="card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0 animate-glow-pulse animate-fade-in-up" style={{ animationDelay: '2s' }}>
+        <Card className="card-lift backdrop-blur-sm bg-white/5 dark:bg-black/5 border-0 animate-fade-in-up" style={{ animationDelay: '2.0s' }}>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full animate-pulse"></div>
+              <Upload className="h-5 w-5 text-green-500" />
               <span>Getting Started</span>
             </CardTitle>
             <CardDescription>
@@ -341,12 +385,12 @@ const DashboardPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Upload Images - Clickable */}
               <div 
-                className="space-y-3 animate-fade-in-up card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700 hover:shadow-lg" 
+                className="space-y-3 card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700 hover:shadow-lg" 
                 style={{ animationDelay: '2.2s' }}
                 onClick={triggerFileUpload}
               >
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center animate-glow-pulse shadow-lg">
-                  <Upload className="h-6 w-6 text-white animate-icon-spin" />
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Upload className="h-6 w-6 text-white" />
                 </div>
                 <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Upload Images</h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -362,17 +406,16 @@ const DashboardPage = () => {
                   <Upload className="h-4 w-4 mr-2" />
                   Choose Images
                 </Button>
-                <AnimatedProgressBar value={75} max={100} height={3} delay={2000} />
               </div>
               
               {/* Create Annotations - Clickable */}
               <div 
-                className="space-y-3 animate-fade-in-up card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-700 hover:shadow-lg" 
+                className="space-y-3 card-lift hover:scale-105 transition-all duration-300 p-6 rounded-lg cursor-pointer bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-700 hover:shadow-lg" 
                 style={{ animationDelay: '2.4s' }}
                 onClick={navigateToAnnotations}
               >
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center animate-glow-pulse shadow-lg">
-                  <PenTool className="h-6 w-6 text-white animate-icon-spin" />
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <PenTool className="h-6 w-6 text-white" />
                 </div>
                 <h4 className="text-lg font-semibold text-green-900 dark:text-green-100">Create Annotations</h4>
                 <p className="text-sm text-green-700 dark:text-green-300">
@@ -388,7 +431,6 @@ const DashboardPage = () => {
                   <PenTool className="h-4 w-4 mr-2" />
                   Start Annotating
                 </Button>
-                <AnimatedProgressBar value={85} max={100} height={3} delay={2200} />
               </div>
             </div>
           </CardContent>

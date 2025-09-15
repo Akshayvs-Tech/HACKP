@@ -36,19 +36,24 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <aside 
         className={clsx(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-card/95 backdrop-blur-xl border-r shadow-lg transform transition-all duration-300 ease-in-out lg:relative lg:transform-none",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b">
-            <h2 className="text-lg font-semibold">PhotoApp</h2>
+          <div className="flex items-center justify-between h-16 px-6 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center shadow-md">
+                <span className="text-primary-foreground font-bold text-sm">P</span>
+              </div>
+              <h2 className="text-lg font-semibold tracking-tight">PhotoApp</h2>
+            </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="lg:hidden"
+              className="lg:hidden hover:bg-accent/50 transition-colors"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -63,21 +68,47 @@ const Sidebar = ({ isOpen, onClose }) => {
                 onClick={onClose}
                 className={({ isActive }) =>
                   clsx(
-                    "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative",
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-md transform scale-[1.02]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:transform hover:scale-[1.01]"
                   )
                 }
               >
-                <item.icon className="h-5 w-5" />
-                <span>{item.name}</span>
+                {({ isActive }) => (
+                  <>
+                    <div className={clsx(
+                      "p-1 rounded-lg transition-colors",
+                      isActive ? "bg-white/20" : "group-hover:bg-primary/10"
+                    )}>
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <span className="font-medium">{item.name}</span>
+                    {isActive && (
+                      <div className="absolute right-4 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                    )}
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
 
-          {/* Footer - Empty or minimal */}
-          <div className="border-t">
+          {/* Footer */}
+          <div className="border-t p-4">
+            <div className="flex items-center justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="hover:bg-accent/50 transition-all duration-200 hover:scale-105"
+              >
+                {theme === 'light' ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </aside>
